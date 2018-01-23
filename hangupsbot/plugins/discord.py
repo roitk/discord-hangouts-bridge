@@ -27,10 +27,11 @@ async def on_ready():
 async def on_message(message):
     content = message.content
     author = str(message.author).rsplit('#', 1)[0]
-    new_message = author + ": " + content
-    logger.info("message received: {}".format(new_message))
+    new_message = "<b>{}:</b> {}".format(author, content)
+    logger.info("message from discord")
+    logger.info(new_message)
     for convid in bot_global.conversations.get():
-        bot_global.coro_send_message(convid, new_message)
+        await bot_global.coro_send_message(convid, new_message)
 
 # Called when the bot starts up
 # Need to set up the discord connection and account here
@@ -44,9 +45,11 @@ def _start_discord_account(bot):
 
 # hangouts message handler
 def _received_message(bot, event, command):
-    logger.info("hangouts message handler")
+    new_message = "**{}**: {}".format(event.user.full_name, event.text)
+    logger.info("message from hangouts")
+    logger.info(new_message)
     # send message to discord here
     for chan in client.get_all_channels():
         if chan.type == discord.ChannelType.text:
             logger.info(chan)
-            yield from client.send_message(chan, event.text)
+            yield from client.send_message(chan, new_message)
