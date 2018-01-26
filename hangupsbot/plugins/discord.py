@@ -23,7 +23,7 @@ async def do_help(source, source_id):
 
 async def do_getid(source, source_id):
     """Send this conversation's id back to the sender"""
-    await send_message_invariant(source, source_id, "this conversation's id: {}".format(source_id))
+    await send_message_invariant(source, source_id, "This {} channel id: {}".format(source, source_id))
 
 async def do_addrelay(source, source_id, **args):
     """Add a relay from this conversation to the opposite type of conversation"""
@@ -48,7 +48,7 @@ async def do_addrelay(source, source_id, **args):
     relay_map[target][target_id][source_id] = True
     CLIENT.hangouts_bot.memory.set_by_path(["discord_relay_map"], relay_map)
     CLIENT.relay_map = relay_map
-    await send_message_invariant(source, source_id, "relay added to {} channel {}".format(target, target_id))
+    await send_message_invariant(source, source_id, "Relay added to {} channel {}.".format(target, target_id))
 
 async def do_delrelay(source, source_id, **args):
     """Delete a relay"""
@@ -57,20 +57,20 @@ async def do_delrelay(source, source_id, **args):
         await send_message_invariant(source, source_id, "usage: !delrelay <{}_id>".format(target))
     arg_string = args["arg_string"]
     target_id = arg_string.split(" ", 1)[0]
-    LOGGER.info("relay delete request received from %s channel %s to %s channel %s",
+    LOGGER.info("Relay delete request received from %s channel %s to %s channel %s.",
                 source,
                 source_id,
                 target,
                 target_id)
     relay_map = CLIENT.hangouts_bot.memory.get_by_path(["discord_relay_map"])
     if source_id not in relay_map[source]:
-        await send_message_invariant(source, source_id, "no relays found for this channel")
+        await send_message_invariant(source, source_id, "No relays found for this channel.")
         return
     if target_id not in relay_map[target]:
-        await send_message_invariant(source, source_id, "there are no relays to that channel")
+        await send_message_invariant(source, source_id, "There are no relays to that channel.")
         return
     if target_id not in relay_map[source][source_id] or source_id not in relay_map[target][target_id]:
-        msg = "there is no relay between this channel and {} channel {}".format(target, target_id)
+        msg = "There is no relay between this channel and {} channel {}.".format(target, target_id)
         await send_message_invariant(source, source_id, msg)
         return
     del relay_map[source][source_id][target_id]
@@ -81,11 +81,11 @@ async def do_delrelay(source, source_id, **args):
         del relay_map[target][target_id]
     CLIENT.hangouts_bot.memory.set_by_path(["discord_relay_map"], relay_map)
     CLIENT.relay_map = relay_map
-    await send_message_invariant(source, source_id, "relay between {} channel {} and this channel deleted".format(target, target_id))
+    await send_message_invariant(source, source_id, "Relay between {} channel {} and this channel deleted.".format(target, target_id))
 
 async def do_relaydump(source, source_id):
     """Print a list of relay maps"""
-    msg = "here is a list of relays"
+    msg = "Here are all of my relays:"
     await send_message_invariant(source, source_id, msg)
     await send_message_invariant(source, source_id, str(CLIENT.relay_map))
 
