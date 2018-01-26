@@ -48,6 +48,7 @@ async def do_addrelay(source, source_id, **args):
     relay_map[target][target_id][source_id] = True
     CLIENT.hangouts_bot.memory.set_by_path(["discord_relay_map"], relay_map)
     CLIENT.relay_map = relay_map
+    await send_message_invariant(source, source_id, "relay added to {} channel {}".format(target, target_id))
 
 async def do_delrelay(source, source_id, **args):
     """Delete a relay"""
@@ -80,6 +81,7 @@ async def do_delrelay(source, source_id, **args):
         del relay_map[target][target_id]
     CLIENT.hangouts_bot.memory.set_by_path(["discord_relay_map"], relay_map)
     CLIENT.relay_map = relay_map
+    await send_message_invariant(source, source_id, "relay between {} channel {} and this channel deleted".format(target, target_id))
 
 async def do_relaydump(source, source_id):
     """Print a list of relay maps"""
