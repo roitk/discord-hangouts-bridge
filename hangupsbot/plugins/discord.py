@@ -73,7 +73,11 @@ async def do_delrelay(source, source_id, **args):
         await send_message_invariant(source, source_id, msg)
         return
     del relay_map[source][source_id][target_id]
+    if not relay_map[source][source_id]:
+        del relay_map[source][source_id]
     del relay_map[target][target_id][source_id]
+    if not relay_map[target][target_id]:
+        del relay_map[target][target_id]
     CLIENT.hangouts_bot.memory.set_by_path(["discord_relay_map"], relay_map)
     CLIENT.relay_map = relay_map
 
@@ -81,7 +85,7 @@ async def do_relaydump(source, source_id):
     """Print a list of relay maps"""
     msg = "here is a list of relays"
     await send_message_invariant(source, source_id, msg)
-    await send_message_invariant(source, source_id, str(CLIENT.relay_map[source]))
+    await send_message_invariant(source, source_id, str(CLIENT.relay_map))
 
 COMMAND_DICT = {
     "!help": do_help,
@@ -161,15 +165,17 @@ async def on_message(message):
 
 # hangouts message handler
 def _received_message(bot, event, command):
-    coro = parse_command("hangouts", event.conv_id, event.text)
-    loop = asyncio.get_event_loop()
-    if asyncio.run_coroutine_threadsafe(coro, loop):
+    command = yield from parse_command("hangouts", event.conv_id, event.text)
+    if command:
         return
     new_message = "**{}**: {}".format(event.user.full_name, event.text)
-    LOGGER.info("message from hangouts")
+    LOGGER.info("message from hangouts conversation %s", event.conv_id)
     LOGGER.info(new_message)
     # send message to discord here
-    for chan in CLIENT.relay_map["hangouts"][event.conv_id]:
-        if CLIENT.get_channel(chan).type == discord.ChannelType.text:
+    for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
+        LOGGER.info(conv_id)
+        chan = CLIENT.get_channel(conv_id)
+        LOGGER.info(chan)
+        if chan.type == discord.ChannelType.text:
             LOGGER.info(chan)
             yield from CLIENT.send_message(chan, new_message)
