@@ -161,9 +161,10 @@ async def on_message(message):
     new_message = "<b>{}:</b> {}".format(author, content)
     LOGGER.info("message from discord")
     LOGGER.info(new_message)
-    for convid in CLIENT.relay_map["discord"][message.channel.id]:
-        LOGGER.info("sending to {}".format(convid))
-        await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
+    if message.channel.id in CLIENT.relay_map["discord"]:
+        for convid in CLIENT.relay_map["discord"][message.channel.id]:
+            LOGGER.info("sending to {}".format(convid))
+            await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
 
 # hangouts message handler
 def _received_message(bot, event, command):
@@ -174,10 +175,11 @@ def _received_message(bot, event, command):
     LOGGER.info("message from hangouts conversation %s", event.conv_id)
     LOGGER.info(new_message)
     # send message to discord here
-    for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
-        LOGGER.info(conv_id)
-        chan = CLIENT.get_channel(conv_id)
-        LOGGER.info(chan)
-        if chan.type == discord.ChannelType.text:
+    if event.conv_id in CLIENT.relay_map["hangouts"]:
+        for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
+            LOGGER.info(conv_id)
+            chan = CLIENT.get_channel(conv_id)
             LOGGER.info(chan)
-            yield from CLIENT.send_message(chan, new_message)
+            if chan.type == discord.ChannelType.text:
+                LOGGER.info(chan)
+                yield from CLIENT.send_message(chan, new_message)
