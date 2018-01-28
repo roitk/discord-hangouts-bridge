@@ -98,14 +98,14 @@ COMMAND_DICT = {
 }
 
 def _initialize(bot):
+    """Hangoutsbot plugin initialization function"""
     plugins.register_handler(_received_message, type="message", priority=50)
     CLIENT.hangouts_bot = bot
     _start_discord_account(bot)
     _init_discord_map(bot)
 
-# Called when the bot starts up
-# Need to set up the discord connection and account here
 def _start_discord_account(bot):
+    """Log in to discord using token stored in config file"""
     loop = asyncio.get_event_loop()
     LOGGER.info("start discord account here")
     discord_config = bot.get_config_option('discord')
@@ -114,6 +114,7 @@ def _start_discord_account(bot):
     asyncio.run_coroutine_threadsafe(coro, loop)
 
 def _init_discord_map(bot):
+    """Creates a relay map if it doesn't exist and reads it into memory"""
     if not bot.memory.exists(["discord_relay_map"]):
         bot.memory.set_by_path(["discord_relay_map"], {})
     relay_map = bot.memory.get_by_path(["discord_relay_map"])
@@ -126,7 +127,7 @@ def _init_discord_map(bot):
 
 @CLIENT.event
 async def on_ready():
-    """On ready handler"""
+    """Discord ready handler"""
     LOGGER.info("Logged in as")
     LOGGER.info(CLIENT.user.name)
     LOGGER.info(CLIENT.user.id)
@@ -148,10 +149,9 @@ async def parse_command(source, source_id, content):
         return True
     return False
 
-# discord message handler
 @CLIENT.event
 async def on_message(message):
-    """Discord message event handler"""
+    """Discord message handler"""
     if message.author.id == CLIENT.user.id:
         return
     if await parse_command("discord", message.channel.id, message.content):
@@ -166,8 +166,8 @@ async def on_message(message):
             LOGGER.info("sending to {}".format(convid))
             await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
 
-# hangouts message handler
 def _received_message(bot, event, command):
+    """Hangouts message handler"""
     command = yield from parse_command("hangouts", event.conv_id, event.text)
     if command:
         return
