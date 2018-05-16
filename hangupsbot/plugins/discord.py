@@ -158,14 +158,14 @@ async def on_message(message):
         return
 
     # Don't send commands through the relay
-    if await parse_command("discord", message.channel.id, message.content):
+    if await parse_command("discord", message.channel.id, message.clean_content):
         return
 
     # Only send regular messages
     if message.type != discord.MessageType.default:
         return
     
-    content = message.content
+    content = message.clean_content
     author = str(message.author).rsplit('#', 1)[0]
     if message.author.nick:
         author = str(message.author.nick)
