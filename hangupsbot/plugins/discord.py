@@ -152,12 +152,23 @@ async def parse_command(source, source_id, content):
 @CLIENT.event
 async def on_message(message):
     """Discord message handler"""
+
+    # Prevent message loopback
     if message.author.id == CLIENT.user.id:
         return
+
+    # Don't send commands through the relay
     if await parse_command("discord", message.channel.id, message.content):
         return
+
+    # Only send regular messages
+    if message.type != discord.MessageType.default:
+        return
+    
     content = message.content
     author = str(message.author).rsplit('#', 1)[0]
+    if message.author.nick:
+        author = str(message.author.nick)
     new_message = "<b>{}:</b> {}".format(author, content)
     LOGGER.info("message from discord")
     LOGGER.info(new_message)
@@ -174,7 +185,8 @@ def _received_message(bot, event, command):
     new_message = "**{}**: {}".format(event.user.full_name, event.text)
     LOGGER.info("message from hangouts conversation %s", event.conv_id)
     LOGGER.info(new_message)
-    # send message to discord here
+
+    # Send message to discord
     if event.conv_id in CLIENT.relay_map["hangouts"]:
         for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
             LOGGER.info(conv_id)
