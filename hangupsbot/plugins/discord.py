@@ -177,6 +177,14 @@ async def on_message(message):
             LOGGER.info("sending to {}".format(convid))
             await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
 
+def encode_mentions(message, server):
+    """Encode mentions so they're not just displayed as plaintext"""
+    tokens = ['<@' + server.get_member_named(token[1:]).id + '>'
+        if token.startswith('@') and server.get_member_named(token[1:]) 
+        else token 
+    for token in message.split()]
+    return ' '.join(tokens)
+
 def _received_message(bot, event, command):
     """Hangouts message handler"""
     command = yield from parse_command("hangouts", event.conv_id, event.text)
@@ -191,7 +199,14 @@ def _received_message(bot, event, command):
         for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
             LOGGER.info(conv_id)
             chan = CLIENT.get_channel(conv_id)
+            server = chan.server
+
+            # Properly encode mentions
+            new_message = encode_mentions(new_message, server)
+
             LOGGER.info(chan)
+
+            # Only send to text channels, not voice and other
             if chan.type == discord.ChannelType.text:
                 LOGGER.info(chan)
                 yield from CLIENT.send_message(chan, new_message)
