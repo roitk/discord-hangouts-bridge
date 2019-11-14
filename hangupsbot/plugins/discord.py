@@ -12,7 +12,9 @@ async def send_message_invariant(source, source_id, message):
     """Sends a message to either discord or hangouts"""
     LOGGER.info("Sending message to %s conversation %s: %s", source, source_id, message)
     if source == "discord":
-        await CLIENT.send_message(CLIENT.get_channel(source_id), message)
+        channel = CLIENT.get_channel(source_id)
+        #await CLIENT.send_message(CLIENT.get_channel(source_id), message)
+        await channel.send(message)
     elif source == "hangouts":
         await CLIENT.hangouts_bot.coro_send_message(source_id, message)
 
@@ -152,6 +154,8 @@ async def parse_command(source, source_id, content):
 @CLIENT.event
 async def on_message(message):
     """Discord message handler"""
+    channel = message.channel
+    LOGGER.info("Rx Discord Message on channel %s", channel)
 
     # Prevent message loopback
     if message.author.id == CLIENT.user.id:
@@ -197,9 +201,12 @@ def _received_message(bot, event, command):
     # Send message to discord
     if event.conv_id in CLIENT.relay_map["hangouts"]:
         for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
-            LOGGER.info(conv_id)
-            chan = CLIENT.get_channel(conv_id)
-            server = chan.server
+            channel_id = int(conv_id)
+            #LOGGER.info(conv_id)
+            LOGGER.info("Channel ID: %d",int(conv_id))
+            chan = CLIENT.get_channel(channel_id)
+            print(chan)
+            server = chan.guild
 
             # Properly encode mentions
             new_message = encode_mentions(new_message, server)
@@ -209,4 +216,4 @@ def _received_message(bot, event, command):
             # Only send to text channels, not voice and other
             if chan.type == discord.ChannelType.text:
                 LOGGER.info(chan)
-                yield from CLIENT.send_message(chan, new_message)
+                yield from chan.send(new_message)
