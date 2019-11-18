@@ -5,7 +5,7 @@ import discord
 import plugins
 
 CLIENT = discord.Client()
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(format="%(levelname)s:%(name)s:%(lineno)d:%(message)s",level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 async def send_message_invariant(source, source_id, message):
@@ -102,6 +102,8 @@ COMMAND_DICT = {
 def _initialize(bot):
     """Hangoutsbot plugin initialization function"""
     plugins.register_handler(_received_message, type="message", priority=50)
+	#plugins.register_user_command(["getid"])
+    #plugins.register_admin_command(["addrelay","delrelay","relaydump"])
     CLIENT.hangouts_bot = bot
     _start_discord_account(bot)
     _init_discord_map(bot)
@@ -117,6 +119,10 @@ def _start_discord_account(bot):
 
 def _init_discord_map(bot):
     """Creates a relay map if it doesn't exist and reads it into memory"""
+	#discord_config = bot.get_config_option('discord')
+	#print(discord_config)
+	#relay_map = discord_config["relays"]
+	#LOGGER.info(relay_map)
     if not bot.memory.exists(["discord_relay_map"]):
         bot.memory.set_by_path(["discord_relay_map"], {})
     relay_map = bot.memory.get_by_path(["discord_relay_map"])
@@ -176,8 +182,9 @@ async def on_message(message):
     new_message = "<b>{}:</b> {}".format(author, content)
     LOGGER.info("message from discord")
     LOGGER.info(new_message)
-    if message.channel.id in CLIENT.relay_map["discord"]:
-        for convid in CLIENT.relay_map["discord"][message.channel.id]:
+    LOGGER.info("Channel ID: %d" %(message.channel.id))
+    if str(message.channel.id) in CLIENT.relay_map["discord"]:
+        for convid in CLIENT.relay_map["discord"][str(message.channel.id)]:
             LOGGER.info("sending to {}".format(convid))
             await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
 
@@ -200,12 +207,15 @@ def _received_message(bot, event, command):
 
     # Send message to discord
     if event.conv_id in CLIENT.relay_map["hangouts"]:
+        conIDSent = []
         for conv_id in CLIENT.relay_map["hangouts"][event.conv_id]:
             channel_id = int(conv_id)
             #LOGGER.info(conv_id)
             LOGGER.info("Channel ID: %d",int(conv_id))
             chan = CLIENT.get_channel(channel_id)
             print(chan)
+            if chan in conIDSent:
+                break
             server = chan.guild
 
             # Properly encode mentions
@@ -217,3 +227,4 @@ def _received_message(bot, event, command):
             if chan.type == discord.ChannelType.text:
                 LOGGER.info(chan)
                 yield from chan.send(new_message)
+                conIDSent.append(chan)
