@@ -1112,6 +1112,7 @@ def main():
         except (OSError, IOError) as e:
             sys.exit(_('Failed to copy default config file: {}').format(e))
 
+    print(args)
     configure_logging(args)
 
     # initialise the bot

@@ -1,10 +1,11 @@
 import asyncio, logging
 
 import discord
-
+import aiohttp
 import plugins
+import io
 
-CLIENT = discord.Client()
+CLIENT = discord.Client(shard_id=0, shard_count=1)
 logging.basicConfig(format="%(levelname)s:%(name)s:%(lineno)d:%(message)s",level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
@@ -161,7 +162,24 @@ async def parse_command(source, source_id, content):
 async def on_message(message):
     """Discord message handler"""
     channel = message.channel
+    image_id = None
     LOGGER.info("Rx Discord Message on channel %s", channel)
+    attachments_len = len(message.attachments)
+    if attachments_len > 0:
+        LOGGER.info("We have an attachment that needs fwding...")
+        #for attachment in message.attachments:
+        #    await attachment.save(f'imgs/{attachment.filename}')
+        #    fd = open(f'imgs/{attachment.filename}','r')
+        #    image_id = await CLIENT.hangouts_bot._client.upload_image(fd, filename=f'{attachment.filename}')
+        for a in message.attachments:
+            async with aiohttp.request('GET', a.url) as resp:
+                raw = await resp.read()
+                image_data = io.BytesIO(raw)
+                LOGGER.info("uploading: {}".format(a.url))
+                image_id = await CLIENT.hangouts_bot._client.upload_image(image_data, filename=a.filename)
+            #except:
+            #    LOGGER.info("Error getting link: {}".format(a.url))
+              
 
     # Prevent message loopback
     if message.author.id == CLIENT.user.id:
@@ -177,8 +195,8 @@ async def on_message(message):
     
     content = message.clean_content
     author = str(message.author).rsplit('#', 1)[0]
-    if message.author.nick:
-        author = str(message.author.nick)
+    if message.author.display_name:
+        author = str(message.author.display_name)
     new_message = "<b>{}:</b> {}".format(author, content)
     LOGGER.info("message from discord")
     LOGGER.info(new_message)
@@ -186,7 +204,8 @@ async def on_message(message):
     if str(message.channel.id) in CLIENT.relay_map["discord"]:
         for convid in CLIENT.relay_map["discord"][str(message.channel.id)]:
             LOGGER.info("sending to {}".format(convid))
-            await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
+            await CLIENT.hangouts_bot.coro_send_message(convid, new_message, image_id=image_id)
+            #await CLIENT.hangouts_bot.coro_send_message(convid, new_message)
 
 def encode_mentions(message, server):
     """Encode mentions so they're not just displayed as plaintext"""
